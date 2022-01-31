@@ -58,6 +58,7 @@ def main():
                           optimizer=optimizer,
                           predictor=predictor,
                           device=device,
+                          name=train_dataset.name,
                           **config['trainer'])
     trainer.train(train_dataset)
 

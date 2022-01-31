@@ -6,17 +6,20 @@ from torch.utils.data.dataloader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from from_sthalles_github.PyTorch_BYOL.utils import _create_model_training_folder
+from utils import date_string
 
 
 class BYOLTrainer:
-    def __init__(self, online_network, target_network, predictor, optimizer, device, **params):
+    def __init__(self, online_network, target_network, predictor, optimizer, device, name, **params):
         self.online_network = online_network
         self.target_network = target_network
         self.optimizer = optimizer
         self.device = device
         self.predictor = predictor
+        self.name = name
         self.max_epochs = params['max_epochs']
-        self.writer = SummaryWriter()
+        self.datestring = date_string()
+        self.writer = SummaryWriter(log_dir= self.datestring +'_'+ name )
         self.m = params['m']
         self.batch_size = params['batch_size']
         self.num_workers = params['num_workers']
@@ -79,8 +82,8 @@ class BYOLTrainer:
 
             print("End of epoch {}".format(epoch_counter))
 
-        # save checkpoints
-        self.save_model(os.path.join(model_checkpoints_folder, 'model.pth'))
+            # save checkpoints
+            self.save_model(os.path.join(model_checkpoints_folder,'model_{}_{}.pth'.format(self.datestring, self.name)))
 
     def update(self, batch_view_1, batch_view_2):
         # compute query feature

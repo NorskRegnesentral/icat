@@ -13,7 +13,7 @@ data_transforms:
   input_shape: (96,96,3)
 
 trainer:
-  batch_size: 64
+  batch_size: 160
   m: 0.996 # momentum update
   checkpoint_interval: 5000
   max_epochs: 40

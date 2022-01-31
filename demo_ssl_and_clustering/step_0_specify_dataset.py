@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 from PIL import Image
 from torchvision.transforms import transforms
 from SimCLR.data_aug.gaussian_blur import GaussianBlur
@@ -18,7 +19,7 @@ transform_at_training = transforms.Compose([
     transforms.RandomHorizontalFlip(),
     transforms.RandomVerticalFlip(),
     transforms.RandomApply([
-        transforms.ColorJitter(0.8, 0.8, 0.8, 0.2 )],
+        transforms.ColorJitter(0.8, 0.8, 0.8, 0.2 )], #Brightness, contrast, saturation, hue
         p=0.8),
     GaussianBlur(kernel_size=int(0.1 * 32)),
     transforms.RandomGrayscale(p=0.2),
@@ -56,3 +57,13 @@ class SSLDataset():
 
     def __len__(self):
         return len(self.files)
+
+if __name__ == '__main__':
+    #Test funciton
+    from matplotlib import pyplot as plt
+    bds = SSLDataset(transform_at_training)
+    for i in range(10):
+        img = bds[np.random.randint(len(bds))]
+        plt.imshow( np.moveaxis(np.array(img[0]),0,2))
+        plt.show()
+##

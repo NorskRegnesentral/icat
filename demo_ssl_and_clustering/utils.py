@@ -2,7 +2,10 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+from datetime import datetime
 
+def date_string():
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
 
 def downsample_to_N(array, N, random=False):
     if len(array) <= N:
@@ -25,7 +28,7 @@ def downsample_to_N(array, N, random=False):
 
 
 def imscatter(x, y, images, n_imgs_pr_axis = 50, image_resolution = 100, crop_scheme = 'min'):
-    assert crop_scheme in ['height', 'width',]
+    assert crop_scheme in ['height', 'width', 'min']
     out_image = np.zeros((n_imgs_pr_axis*image_resolution, n_imgs_pr_axis*image_resolution, 3), dtype='uint8') + 255
 
     X = np.linspace(0, (n_imgs_pr_axis - 1) * image_resolution, n_imgs_pr_axis, dtype='uint16')
@@ -55,6 +58,9 @@ def imscatter(x, y, images, n_imgs_pr_axis = 50, image_resolution = 100, crop_sc
         grid_point_has_img[xi, yi] = True
 
         image = plt.imread(image)
+        if len(image.shape) ==2:
+            image = np.concatenate([image[:,:,None]]*3,-1) #For greyscale images
+            
         if crop_scheme == 'height' or (crop_scheme == 'min' and image.shape[0] > image.shape[1]):
             if image.shape[0] > image.shape[1]:
                 s = (image.shape[0]-image.shape[1])//2

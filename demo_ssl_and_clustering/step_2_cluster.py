@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import cv2
 import os
 import numpy as np
@@ -12,7 +14,7 @@ from tqdm import tqdm
 import openTSNE
 
 import sys
-from cluster_utils import downsample_to_N, imscatter
+from utils import downsample_to_N, imscatter, date_string
 from step_0_specify_dataset import SSLDataset, transform_at_prediction
 
 # Initially I tried to use UMAP bot got error:
@@ -23,13 +25,15 @@ from step_0_specify_dataset import SSLDataset, transform_at_prediction
 #################### INSTRUCTION #######################
 
 path_to_pretrained_model = '/nr/samba/jo/pro/iari/usr/anders/code/PyTorch_BYOL/runs/Jan18_09-32-57_jo1.ad.nr.no/checkpoints/model.pth'
-pretraing_type = 'ImageNet' #What pretraining did you use? ('BYOL', 'SimCLR', 'ImageNet' (no path needed))
+pretraing_type = 'BYOL' #What pretraining did you use? ('BYOL', 'SimCLR', 'ImageNet' (no path needed))
 
 # PARAMETERS (that does not need to be changed)
 GPU_NO = 1
 N_pca_components_in_tsne = 100 # Number of components after PCA transform
-tsne_perplexity = 100 #If you do not want to search for a good value, set this.
+tsne_perplexity = None #If you do not want to search for a good value, set this.
 PATH = '.' #Where everything is stored
+
+
 ########################################################
 
 ## Load model and run prediction
@@ -56,7 +60,9 @@ else:
 
 
 dataset = SSLDataset(transform_at_prediction)
-train_loader = torch.utils.data.DataLoader( dataset, batch_size=16, shuffle=False, num_workers=8, pin_memory=True, drop_last=True)
+now = datetime.now().strftime("%m.%d.%Y, %H:%M:%S")
+OUT_FILE = os.path.join(PATH, 'tsne_{}_{}_{}.npz'.format(pretraing_type, date_string(), dataset.name))
+train_loader = torch.utils.data.DataLoader( dataset, batch_size=16, shuffle=False, num_workers=8, pin_memory=True, drop_last=False)
 
 preds = []
 model.eval()
@@ -94,16 +100,16 @@ preds_pca = pca.fit_transform(preds_normed)
 
 if tsne_perplexity is None:
     plt.figure(figsize=[30,15])
-    for i, perplexity in enumerate([2, 5, 10, 30, 50, 100, 125, 150, 200, 300]):
-        tsne = openTSNE.TSNE(n_components=2, perplexity=perplexity, verbose=True, n_jobs=18, negative_gradient_method="fft", )
+    for i, perplexity in enumerate([2, 5, 10, 30, 50, 100, 125, 150, 200, 300, 500, 1000]):
+        tsne = openTSNE.TSNE(n_components=2, perplexity=perplexity, verbose=True, n_jobs=40, negative_gradient_method="fft", )
         embedding = tsne.fit(preds_pca[:,:N_pca_components_in_tsne])
 
-        plt.subplot(2,5,i+1)
+        plt.subplot(2,6,i+1)
         plt.scatter(
             downsample_to_N(embedding[:, 0], 5000),
             downsample_to_N(embedding[:, 1], 5000),
             marker='.')
-        plt.title('Perplexity {}'.format(perplexity))
+        plt.title('Perplexity {} - {}'.format(perplexity, dataset.name))
     plt.show()
 
 
@@ -117,22 +123,21 @@ if tsne_perplexity is None:
         except ValueError:
             print('Could not parse "{}" as int'.format(ask))
 ## Save clustered-points to a file that can be read by icat
-tsne_perplexity=150
 tsne = openTSNE.TSNE(n_components=2, perplexity=tsne_perplexity, verbose=True, n_jobs=18, negative_gradient_method="fft", )
 embedding = tsne.fit(preds_pca[:, :N_pca_components_in_tsne])
 
 
-np.savez(os.path.join(PATH, 'tsne_{}_21.jan'.format(pretraing_type)), xy=embedding, files=dataset.files, perplexity=tsne_perplexity)
+np.savez(OUT_FILE, xy=embedding, files=dataset.files, perplexity=tsne_perplexity)
 
 ## Visualize cluster
-f = np.load(os.path.join(PATH, 'tsne_{}_21.jan.npz'.format(pretraing_type)))
+f = np.load(OUT_FILE)
 xy = f['xy']
 files = f['files']
 
 
 
 scatter_img = imscatter(xy[:,0], xy[:,1], images = files, n_imgs_pr_axis=100, image_resolution=100)
-cv2.imwrite(os.path.join(PATH, str(f.fid).split('/')[-1].split('.npz')[0] + '.jpg'), cv2.cvtColor(scatter_img, cv2.COLOR_RGB2BGR))
+cv2.imwrite(OUT_FILE.split('.npz')[0] + '.jpg', cv2.cvtColor(scatter_img, cv2.COLOR_RGB2BGR))
 plt.figure(figsize=[15,15])
 plt.imshow(scatter_img);
 plt.tight_layout()
