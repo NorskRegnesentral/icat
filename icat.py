@@ -229,7 +229,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
         image_zoom_value = value
 
         indexes = [i['index'] for i in image_elements]
-        return 'Zoom: ' + str(value) +'%',  html_for_visible_images(indexes, data, image_zoom_value)
+        return 'Zoom: ' + str(value) +'%',  html_for_visible_images(indexes, data, image_zoom_value, hide_labelled_images)
 
 
 

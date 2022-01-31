@@ -27,7 +27,7 @@ class ImageClusterData():
             mc = mscoco_dict
 
         #Get classes from mscoco dict
-        if not len(self.classes) and len(mscoco_dict.get('categories',{})):
+        if not len(self.classes) and mscoco_dict is not None and len(mscoco_dict.get('categories',{})):
             class_numbers = [m['id'] for m in mscoco_dict['categories']]
             class_names = [m['name'] for m in mscoco_dict['categories']]
             self.classes = [class_names[i] for i in sorted(class_numbers)]
@@ -38,6 +38,10 @@ class ImageClusterData():
                 {'id': i, 'name':c}
                 for i,c in enumerate(self.classes)
             ]
+        elif 'categories' in mc and len(classes) :
+            #Todo: check that classes are the same as self.classes
+            print('Warning: Icat is assuming classes in json-dict are the same, presented in the same order.')
+            pass
 
         #Make image-list
         if not 'images' in mc:
@@ -52,6 +56,11 @@ class ImageClusterData():
                 )
         if not 'annotations' in mc:
             mc['annotations'] = []
+        else:
+            for a in mc['annotations']:
+                if a['image_id'] in self.path_to_images:
+                    ind = self.path_to_images.index(a['image_id'])
+                    self.class_state[ind] = a['category_id']
 
         if not 'info' in mc:
             mc['info'] = {}
@@ -119,6 +128,8 @@ class ImageClusterData():
     def is_img_selected(self, index):
         if isinstance(index, Iterable):
             return [self.is_img_selected(i) for i in index]
+        if not len(self.classes):
+            return False
         return self.img_selected[index]
 
     def toggle_selected_state(self, index):
@@ -129,8 +140,12 @@ class ImageClusterData():
     def select_img(self, index):
         if isinstance(index, Iterable):
             return [self.select_img(i) for i in index]
+        if not len(self.classes):
+            return
         self.img_selected[index] = True
 
     def unselect_all(self):
         self.img_selected[:] = False
 
+    def __len__(self):
+        return len(self.x)
