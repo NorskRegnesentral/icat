@@ -85,7 +85,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
 
     ##############################################################################
     # LAYOUT OF WEBPAGE
-    marker_color = 'red' if mscoco is None else ['blue' if data.class_state[i] == STATE_UNLABELLED else COLORS[data.class_state[i]].lower() for i in range(len(data))]
+    marker_color = 'blue' if mscoco is None else ['blue' if data.class_state[i] == STATE_UNLABELLED else COLORS[data.class_state[i]].lower() for i in range(len(data))]
     scatter_plot = go.Scattergl(x=xy[:, 0], y= xy[:, 1], mode='markers', marker={'color':marker_color})
     scatter_plot_figure = go.FigureWidget([scatter_plot])
 
