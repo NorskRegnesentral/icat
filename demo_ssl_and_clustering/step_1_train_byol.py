@@ -10,7 +10,7 @@ from from_sthalles_github.PyTorch_BYOL.data.multi_view_data_injector import Mult
 from from_sthalles_github.PyTorch_BYOL.models.mlp_head import MLPHead
 from from_sthalles_github.PyTorch_BYOL.models.resnet_base_network import ResNet18
 from from_sthalles_github.PyTorch_BYOL.trainer import BYOLTrainer
-from step_0_specify_dataset import SSLDataset, transform_at_training
+from step_0_specify_dataset_seal import SSLDataset, transform_at_training
 
 torch.manual_seed(0)
 

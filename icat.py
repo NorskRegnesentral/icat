@@ -133,7 +133,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
         ),
 
         html.Div([
-            html.H1(children='iCAT - image Cluster Analysis Tool'),
+            html.H1(children='iCAT - image Cluster Annotation Tool'),
 
             html.Div(
                 [
