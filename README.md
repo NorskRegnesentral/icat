@@ -39,6 +39,7 @@ https://github.com/sthalles/PyTorch-BYOL, https://github.com/sthalles/SimCLR, do
 
   
 ### Todos
+- Change from MSCOCO to CSV for input/output labels
 - add color to points in scatter when labelled
 - Go through color table and find colors that look distinct, are visible, and different from "unselcted"
 - Test SWAV as SSL pretraing
