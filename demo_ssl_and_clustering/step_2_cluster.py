@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from torchvision.transforms import transforms
 
-from bamjo.utils.pytorch import var_to_np
+from utils import var_to_np
 from tqdm import tqdm
 import openTSNE
 

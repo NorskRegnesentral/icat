@@ -22,7 +22,7 @@ from src.view import get_dropdown_options_for_labels, html_for_visible_images, c
 
 
 
-def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_selected = 200, port=8030, mscoco=None):
+def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_selected = 200, port=8030, host='localhost', mscoco=None):
     ################################################################################
     # Initialize data-object
 
@@ -40,7 +40,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
 
 
     image_paths = cluster_file['files']
-    image_paths = [f.split('/')[-1] for f in image_paths]
+    # image_paths = [f.split('/')[-1] for f in image_paths]  # Remove existing image paths
 
     if replace_path is not None and not os.path.isdir(replace_path):
         raise Exception('Could not find folder {}'.format(replace_path))
@@ -332,7 +332,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
             raise Exception('"{}" is excluded from the allowed static files'.format(file))
 
 
-    app.run_server(debug=True, port=port)
+    app.run_server(debug=True, port=port, host=host)
 
 ##
 
@@ -384,6 +384,13 @@ if __name__ == "__main__":
         required=False)
 
     optionalNamed.add_argument(
+        '-host' ,
+        '--host',
+        help='Host server [default "localhost"]',
+        default='localhost',
+        required=False)
+
+    optionalNamed.add_argument(
         '-m' ,
         '--mscoco',
         help='mscoco-file for existing labels',
@@ -392,11 +399,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-
     run_icat(args.file,
-             classes = args.classes,
+             classes=[] if args.classes == [] else args.classes.split(','),
              replace_path=args.replace_path,
              replace_part=args.replace_part,
-             max_selected = args.max_selected,
+             max_selected=args.max_selected,
              port=args.port,
+             host=args.host,
              mscoco=args.mscoco)
