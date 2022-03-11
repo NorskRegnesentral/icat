@@ -1,7 +1,6 @@
 import torch.nn as nn
 import torchvision.models as models
 
-from exceptions.exceptions import InvalidBackboneError
 
 
 class ResNetSimCLR(nn.Module):
@@ -18,12 +17,7 @@ class ResNetSimCLR(nn.Module):
         self.backbone.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp), nn.ReLU(), self.backbone.fc)
 
     def _get_basemodel(self, model_name):
-        try:
             model = self.resnet_dict[model_name]
-        except KeyError:
-            raise InvalidBackboneError(
-                "Invalid backbone architecture. Check the config file and pass one of: resnet18 or resnet50")
-        else:
             return model
 
     def forward(self, x):

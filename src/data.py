@@ -8,7 +8,7 @@ STATE_UNLABELLED = -1
 
 class ImageClusterData():
 
-    def __init__(self, path_to_images, x, y, classes, mscoco_dict):
+    def __init__(self, path_to_images, x, y, classes, labels):
         if classes is None:
             classes = []
         self.classes = classes
@@ -18,88 +18,37 @@ class ImageClusterData():
         self.class_state = np.zeros(len(x), dtype='int16') + STATE_UNLABELLED
         self.n_times_img_clicked = np.zeros(len(x), dtype='uint64')
         self.img_selected  =np.zeros(len(x), dtype='bool')
-
+        self.inds_of_imgs_in_scatter = None
         now = datetime.now()
 
-        if mscoco_dict is None:
-            mc = {}
-        else:
-            mc = mscoco_dict
+        if labels is not None:
+            try:
+                for line in labels:
+                    if line.startswith('#'):
+                        continue
+                    file,cls = line.split(';')
+                    cls = int(cls.strip(' '))
+                    try:
+                        ind = self.path_to_images.index(file)
+                    except ValueError: #File is not in list
+                        continue
+                    self.class_state[ind] = cls
+            except Exception as e:
+                print('Failed to parse label-file')
+                raise e
+        self.labels = labels
 
-        #Get classes from mscoco dict
-        if not len(self.classes) and mscoco_dict is not None and len(mscoco_dict.get('categories',{})):
-            class_numbers = [m['id'] for m in mscoco_dict['categories']]
-            class_names = [m['name'] for m in mscoco_dict['categories']]
-            self.classes = [class_names[i] for i in sorted(class_numbers)]
 
-        #Make categories list
-        if not 'categories' in mc:
-            mc['categories'] = [
-                {'id': i, 'name':c}
-                for i,c in enumerate(self.classes)
-            ]
-        elif 'categories' in mc and len(classes) :
-            #Todo: check that classes are the same as self.classes
-            print('Warning: Icat is assuming classes in json-dict are the same, presented in the same order.')
-            pass
-
-        #Make image-list
-        if not 'images' in mc:
-            mc['images'] = []
-
-            for f in self.path_to_images:
-                mc['images'].append(
-                    {
-                        "file_name": f,
-                        "id": f
-                    }
-                )
-        if not 'annotations' in mc:
-            mc['annotations'] = []
-        else:
-            for a in mc['annotations']:
-                if a['image_id'] in self.path_to_images:
-                    ind = self.path_to_images.index(a['image_id'])
-                    self.class_state[ind] = a['category_id']
-
-        if not 'info' in mc:
-            mc['info'] = {}
-
-        if "description" not in mc['info']:
-            mc['info']["description"] = "Labels generated with iCat"
-        if "date_created" not in mc['info']:
-            mc['info']["date_created"] = now.strftime("%m/%d/%Y, %H:%M:%S")
-
-        if "change_log" not in mc['info']:
-            mc['info']["change_log"] = []
-
-        if mscoco_dict is not None:
-            mc['info']["change_log"].append(
-                'Imported into iCat on {} with {} existing annotations'.format(
-                    now.strftime("%m/%d/%Y, %H:%M:%S"),
-                    len(mc['annotations'])
-                )
-            )
-        self.mc = mc
 
     def get_mscoco(self):
-        mc = deepcopy(self.mc)
-        for i, ind in enumerate(np.where(self.class_state>-1)[0]):
-            mc['annotations'].append(
-                {
-                    'id': i,
-                    'image_id': str(self.path_to_images[ind]),
-                    'category_id': int(self.class_state[ind])
 
-                }
-            )
         now = datetime.now()
-        mc['info']["change_log"].append(
-            'Exported from iCat on {} with {} annotations'.format(
+        info =  '# Exported from iCat on {} with {} annotations'.format(
                 now.strftime("%m/%d/%Y, %H:%M:%S"),
-                i)
+                int(np.sum(self.class_state!=STATE_UNLABELLED))
         )
-        return mc
+        class_str = '# classes = ["' + '","'.join(self.classes) + '"]'
+        return [info] + [class_str] + ["{}; {}".format(self.path_to_images[i], int(self.class_state[i])) for i in range(len(self)) if self.class_state[i]!=STATE_UNLABELLED]
 
     def set_class_of_selected(self, new_class_label):
         self.class_state[self.img_selected] = new_class_label
