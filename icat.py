@@ -45,7 +45,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
     elif len(image_paths)>100000:
         warnings.warn('icat may be slow with many images ({}), consider using the max_imgs argument'.format(len(image_paths)))
 
-    image_paths = [f.split('/')[-1] for f in image_paths]
+    # image_paths = [f.split('/')[-1] for f in image_paths]
 
     if replace_path is not None and not os.path.isdir(replace_path):
         raise Exception('Could not find folder {}'.format(replace_path))
@@ -481,7 +481,7 @@ if __name__ == "__main__":
 
 
     run_icat(args.file,
-             classes = args.classes,
+             classes=[] if args.classes == [] else args.classes.split(','),
              replace_path=args.replace_path,
              replace_part=args.replace_part,
              max_selected = args.max_selected,
