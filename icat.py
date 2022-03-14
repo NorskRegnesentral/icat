@@ -255,7 +255,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
         global size_labelled
         print('Changing zoom value to {}'.format(value))
         size_labelled = value
-        return 'Size un-labelled: ' + str(int(value))
+        return 'Size labelled: ' + str(int(value))
 
     # Update scatter-plot
     @app.callback(
