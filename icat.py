@@ -16,7 +16,7 @@ from src.view import get_dropdown_options_for_labels, html_for_visible_images, c
     STATIC_IMAGE_ROUTE, COLORS, get_scatter_plot_fig
 
 
-def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selected = 200, port=8030, label_file=None, max_imgs = None):
+def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selected = 200, port=8030, host='localhost', label_file=None, max_imgs = None):
     ################################################################################
     # Initialize data-object
 
@@ -404,7 +404,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
             raise Exception('"{}" is excluded from the allowed static files'.format(file))
 
 
-    app.run_server(debug=True, port=port)
+    app.run_server(debug=True, port=port, host=host)
 
 ##
 
@@ -456,6 +456,13 @@ if __name__ == "__main__":
         required=False)
 
     optionalNamed.add_argument(
+        '-host' ,
+        '--host',
+        help='Host server [default "localhost"]',
+        default='localhost',
+        required=False)
+
+    optionalNamed.add_argument(
         '-m' ,
         '--mscoco',
         help='mscoco-file for existing labels',
@@ -479,5 +486,6 @@ if __name__ == "__main__":
              replace_part=args.replace_part,
              max_selected = args.max_selected,
              port=args.port,
+             host=args.host,
              label_file=args.mscoco,
              max_imgs=args.max_imgs)
