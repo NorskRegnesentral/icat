@@ -1,37 +1,31 @@
 import argparse
 import json
 import os
-import time
+import warnings
 
 import flask
 import numpy as np
 
 from dash import dcc
 from dash import html
-from dash.development.base_component import Component
-from dash_extensions import DeferScript
 from dash_extensions.enrich import Output, DashProxy, Input, State, ALL, MultiplexerTransform, MATCH
-import plotly.graph_objects as go
-from flask_caching import Cache
 
-from src.data import ImageClusterData, STATE_UNLABELLED
+from src.data import ImageClusterData
 from src.utils import downsample_to_N
 from src.view import get_dropdown_options_for_labels, html_for_visible_images, css_for_image_border, \
-    STATIC_IMAGE_ROUTE, COLORS
+    STATIC_IMAGE_ROUTE, COLORS, get_scatter_plot_fig
 
 
-
-
-def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_selected = 200, port=8030, host='localhost', mscoco=None):
+def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selected = 200, port=8030, host='localhost', label_file=None, max_imgs = None):
     ################################################################################
     # Initialize data-object
 
     #Open data
     cluster_file = np.load(file)
 
-    if type(mscoco) == str:
-        with open(mscoco) as f:
-            mscoco = json.load(f)
+    if type(label_file) == str:
+        with open(label_file) as f:
+            label_file = f.readlines()
 
     #Check input
     assert 'files' in cluster_file, 'Could not find "files" in {}'.format(file)
@@ -40,7 +34,18 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
 
 
     image_paths = cluster_file['files']
-    # image_paths = [f.split('/')[-1] for f in image_paths]  # Remove existing image paths
+    xy = cluster_file['xy']
+    del cluster_file
+
+    if max_imgs is not None:
+        if len(image_paths)>max_imgs:
+            N = len(image_paths)//max_imgs
+            image_paths = image_paths[::N]
+            xy = xy[::N,:]
+    elif len(image_paths)>100000:
+        warnings.warn('icat may be slow with many images ({}), consider using the max_imgs argument'.format(len(image_paths)))
+
+    image_paths = [f.split('/')[-1] for f in image_paths]
 
     if replace_path is not None and not os.path.isdir(replace_path):
         raise Exception('Could not find folder {}'.format(replace_path))
@@ -62,7 +67,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
         raise FileNotFoundError('Could not find files. Eg. {}'.format(image_paths[0]))
     assert np.mean(files_that_can_be_found)>.9, 'More than 10% of the files can not be found'
 
-    xy = cluster_file['xy']
+
 
     if np.mean(files_that_can_be_found)!=1:
         print('WARNING: could not find all files - ICAT will remove ignore that are missing - {} of {} files found'.format(np.sum(files_that_can_be_found), len(files_that_can_be_found)))
@@ -72,12 +77,14 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
 
 
     # State for this session
-    global data, image_zoom_value,  selected_class, all_is_selected, hide_labelled_images
-    data = ImageClusterData(image_paths, xy[:, 0],  xy[:, 1], classes, mscoco)
+    global data, image_zoom_value,  selected_class, all_is_selected, category_to_show, scatter_plot, size_labelled, size_unlabelled
+    data = ImageClusterData(image_paths, xy[:, 0],  xy[:, 1], classes, label_file)
     image_zoom_value = 100
     selected_class = None
     all_is_selected = False
-    hide_labelled_images = False
+    category_to_show = -2 #==all
+    size_labelled = 2
+    size_unlabelled = 2
     app = DashProxy(__name__, prevent_initial_callbacks=True, transforms=[MultiplexerTransform()])
 
     app.scripts.config.serve_locally = True
@@ -85,13 +92,9 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
 
     ##############################################################################
     # LAYOUT OF WEBPAGE
-    marker_color = 'blue' if mscoco is None else ['blue' if data.class_state[i] == STATE_UNLABELLED else COLORS[data.class_state[i]].lower() for i in range(len(data))]
-    scatter_plot = go.Scattergl(x=xy[:, 0], y= xy[:, 1], mode='markers', marker={'color':marker_color})
-    scatter_plot_figure = go.FigureWidget([scatter_plot])
+    scatter_plot_figure = get_scatter_plot_fig(data, category_to_show, size_labelled, size_unlabelled, None)
 
     app.layout = html.Div(children=[
-
-
 
         html.Div([
             html.Div(
@@ -110,7 +113,6 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
                 [
                     html.Button('Download mscoco', id='download_button'),
                     dcc.Download(id="download-text"),
-                    html.Button('Hide/un-hide labelled ', id='hide_labelled_button'),
                     html.Button('Select/Un-select all', id='select_all_button'),
                     html.Div(
                         [
@@ -127,43 +129,81 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
                     ),
                 ], hidden= len(data.classes)==0,#Hide this part if no labels are provided
             ),
-            html.Div( [ html.Plaintext(c, style={'color':COLORS[i], 'width': str(int(50//len(data.classes)))+'%', 'margin':'2px'}) for i,c in enumerate(data.classes)])
+            html.Div( [ html.Plaintext(c, style={'color':COLORS[i% len(COLORS)], 'width': str(int(50//len(data.classes)))+'%', 'margin':'2px'}) for i,c in enumerate(data.classes)])
         ],
             style={'width': "49%", 'float': 'right'}
         ),
 
         html.Div([
-            html.H1(children='iCAT - image Cluster Annotation Tool'),
+            html.H1(children='iCAT - image Cluster Analysis Tool'),
 
             html.Div(
                 [
                     dcc.Graph(
                         id='scatter_plot',
-                        figure=scatter_plot_figure)
+                        figure=scatter_plot_figure, style={'height':'80vh'}),
+
+                    html.Div([
+                        html.Div(
+                            [
+                                html.Div(['Size labelled: {}'.format(size_unlabelled)], id='size-labelled-text',
+                                         style={'textAlign': 'center'}),
+                                dcc.Slider(
+                                    id='size_labelled',
+                                    min=1,
+                                    max=20,
+                                    step=1,
+                                    value=size_labelled,
+                                ),
+                            ], style={'width': '20%', 'float': 'left'}
+                        ),
+
+                        html.Div(
+                            [
+                                html.Div(['Size un-labelled: {}'.format(size_unlabelled)], id='size-unlabelled-text',
+                                         style={'textAlign': 'center'}),
+                                dcc.Slider(
+                                    id='size_unlabelled',
+                                    min=1,
+                                    max=20,
+                                    step=1,
+                                    value=size_unlabelled,
+                                ),
+                            ], style={'width': '20%', 'float': 'left'}
+                        ),
+                    ]),
+                    html.Button('Refresh scatter plot', id='update_scatter_plot_button', style={'float':'left'}),
+                    html.Div(
+                        [
+                            dcc.Dropdown(
+                        id='show_list',
+                        options=[{'label': l, 'value': i-2}  for i,l in enumerate(['Show all', 'Unlabelled only'] + [v +' only' for v in data.classes])] ,
+                        clearable=False,
+                        value=-2,
+                    )], style={'width': '20%', 'float': 'left'}),
+
                 ],
                 style={'width': '49%', 'float': 'left'}
             ),
+
             html.Div(
                 [
 
                     html.Div(id='image_field')
                 ],
-                style={'width': '49%', 'float': 'right'}
+                style={'width': '49%', 'height':'80vh', 'float': 'right', 'overflow-y': 'scroll'}
             ),
         ]),
         # DeferScript(src='/static/select_lasso.js') #This cause lasso.js being reloaded every 5 s - shoul only run once
-    ])
-
+    ], style={'margin': 0, 'width':'100%','height': '100%','overflow': 'hidden'})
 
     #app.scripts.append_script(lasso_select_script)
-    scatter_plot_figure.update_layout(clickmode='event+select', height=1000) #Make scatterplot selectable
-    scatter_plot
     ##############################################################################
     # CALLBACKS ON GUI INTERACTION
     # STATE variables for GUI
 
 
-    # Select points in scatter
+    #Select points in scatter
     @app.callback(
         Output('image_field', 'children'),
         Input('scatter_plot', 'selectedData'),
@@ -182,15 +222,65 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
         if marked_scatter_points is None:
             return '', [None] * len(ids)
 
-        indexes_of_marked = [p['pointNumber'] for p in marked_scatter_points['points']]
+
+        indexes_of_marked = [int(data.inds_of_imgs_in_scatter[p['pointNumber']]) for p in marked_scatter_points['points']]
         indexes_of_marked = downsample_to_N(indexes_of_marked, max_selected, random=True)
+
 
         all_is_selected = True
         data.select_img(indexes_of_marked)
 
         print('Selected {} points in scatter.'.format(len(indexes_of_marked)))
 
-        return html_for_visible_images(indexes_of_marked, data, image_zoom_value, hide_labelled_images)
+        return html_for_visible_images(indexes_of_marked, data, image_zoom_value, category_to_show)
+
+
+    # On size_labelled-slider value change
+    @app.callback(
+        Input('size_unlabelled', 'value'),
+        Output('size-unlabelled-text', 'children'),
+    )
+    def change_value_size_unlabelled(value):
+        global size_unlabelled
+        print('Changing zoom value to {}'.format(value))
+        size_unlabelled = value
+        return 'Size un-labelled: ' + str(int(value))
+
+    # On size_un-labelled-slider value change
+    @app.callback(
+        Input('size_labelled', 'value'),
+        Output('size-labelled-text', 'children'),
+    )
+    def change_value_size_labelled(value):
+        global size_labelled
+        print('Changing zoom value to {}'.format(value))
+        size_labelled = value
+        return 'Size un-labelled: ' + str(int(value))
+
+    # Update scatter-plot
+    @app.callback(
+        Output('scatter_plot', 'figure'),
+        Output('image_field', 'children'),
+        Input('update_scatter_plot_button', 'n_clicks'),
+        prevent_initial_call = True,
+    )
+    def update_scatterplot(n_clicks):
+        data.unselect_all()
+        return get_scatter_plot_fig(data, category_to_show, size_labelled, size_unlabelled, None) , html_for_visible_images([], data, image_zoom_value, category_to_show)
+
+
+
+
+    # On show_all dropdown-menu change
+    @app.callback(
+                Output('image_field', 'children'),
+                Output('scatter_plot', 'figure'),
+                  Input('show_list', 'value'))
+    def show_category(value):
+        global category_to_show
+        category_to_show = value
+        data.unselect_all()
+        return html_for_visible_images([], data, image_zoom_value, category_to_show), get_scatter_plot_fig(data, category_to_show, size_labelled, size_unlabelled, None)
 
 
     # On image click
@@ -229,7 +319,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
         image_zoom_value = value
 
         indexes = [i['index'] for i in image_elements]
-        return 'Zoom: ' + str(value) +'%',  html_for_visible_images(indexes, data, image_zoom_value, hide_labelled_images)
+        return 'Zoom: ' + str(value) +'%',  html_for_visible_images(indexes, data, image_zoom_value, category_to_show)
 
 
 
@@ -261,7 +351,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
         all_is_selected = False
 
         indexes = [p['index'] for p in image_elements]
-        return html_for_visible_images(indexes, data, image_zoom_value, hide_labelled_images)
+        return html_for_visible_images(indexes, data, image_zoom_value, category_to_show)
 
 
     # On select/unselect
@@ -282,27 +372,9 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
             indexes = [ie['index'] for ie in image_elements]
             data.select_img(indexes)
 
-        return html_for_visible_images(indexes, data, image_zoom_value, hide_labelled_images)
+        return html_for_visible_images(indexes, data, image_zoom_value, category_to_show)
 
 
-    # Hide labelled images
-    @app.callback(Output('image_field', 'children'),
-                  Input('hide_labelled_button', 'n_clicks'),
-                  State({'role': 'img', 'index': ALL}, 'id'),
-                  )
-    def toggle_hide_labelled(n_clicks, image_elements):
-        global hide_labelled_images
-
-        print('toggle_all_selected')
-        indexes = [ie['index'] for ie in image_elements]
-
-        if hide_labelled_images:
-            hide_labelled_images = False
-
-        else:
-            hide_labelled_images = True
-
-        return html_for_visible_images(indexes, data, image_zoom_value, hide_labelled_images)
 
 
 
@@ -312,7 +384,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None,  max_sele
         prevent_initial_call=True,
     )
     def func(n_clicks):
-        return dict(content=json.dumps(data.get_mscoco(), indent=2), filename="labels.json")
+        return dict(content='\n'.join(data.get_mscoco()), filename="labels.txt")
 
     # Function that serves files to webpage
     # Be *very* careful here - you don't want to serve arbitrary files
@@ -397,13 +469,23 @@ if __name__ == "__main__":
         default=None,
         required=False)
 
+    optionalNamed.add_argument(
+        '-mi',
+        '--max_imgs',
+        help='icat will limit the number of images if this is provided',
+        default=None,
+        required=False)
+
+
     args = parser.parse_args()
 
+
     run_icat(args.file,
-             classes=[] if args.classes == [] else args.classes.split(','),
+             classes = args.classes,
              replace_path=args.replace_path,
              replace_part=args.replace_part,
-             max_selected=args.max_selected,
+             max_selected = args.max_selected,
              port=args.port,
              host=args.host,
-             mscoco=args.mscoco)
+             label_file=args.mscoco,
+             max_imgs=args.max_imgs)

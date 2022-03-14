@@ -8,7 +8,7 @@ A tool for exploring and labelling images that have been clustered.
 - make a npz-file with clusters with the following fields
   - 'files': list with path to images
   - "xy": a Nx2 array of floats with positions of the images in cluster space
-- Install requirements
+  - Install requirements
 ```
 pip install -r requirements
 ```
@@ -39,8 +39,6 @@ https://github.com/sthalles/PyTorch-BYOL, https://github.com/sthalles/SimCLR, do
 
   
 ### Todos
-- add color to points in scatter when labelled
-- Go through color table and find colors that look distinct, are visible, and different from "unselcted"
 - Test SWAV as SSL pretraing
 - Test pl library for ssl
 - Test PAWS for SemiSupervised L.

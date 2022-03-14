@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import torchvision
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 from from_sthalles_github.PyTorch_BYOL.utils import _create_model_training_folder
 from utils import date_string
@@ -58,7 +59,7 @@ class BYOLTrainer:
 
         for epoch_counter in range(self.max_epochs):
 
-            for (batch_view_1, batch_view_2), _ in train_loader:
+            for (batch_view_1, batch_view_2), _ in tqdm(train_loader, total = len(train_loader)):
 
                 batch_view_1 = batch_view_1.to(self.device)
                 batch_view_2 = batch_view_2.to(self.device)
