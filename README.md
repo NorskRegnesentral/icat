@@ -1,6 +1,6 @@
 # ICAT: Image Cluster Annotation Tool
 A tool for exploring and labelling images that have been clustered.
-<img src="library/icat.png">
+<img src="src/icat.png">
 
   
 

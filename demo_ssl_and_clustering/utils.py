@@ -79,3 +79,37 @@ def imscatter(x, y, images, n_imgs_pr_axis = 50, image_resolution = 100, crop_sc
         out_image[X[xi]:X[xi]+image_resolution, Y[yi]:Y[yi]+image_resolution] = image
     out_image = np.flipud(np.moveaxis(out_image, 0, 1))
     return out_image
+
+#Take a pytorch variable and make numpy [Copied from the bamjo package]
+
+def var_to_np(var, delete_var=False):
+    tmp_var = var
+    if type(tmp_var) in [np.array, np.ndarray]:
+        return tmp_var
+
+    #If input is list we do this for all elements
+    if type(tmp_var) == type([]):
+        out = []
+        for v in tmp_var:
+            out.append(var_to_np(v))
+        return out
+
+    try:
+        tmp_var = tmp_var.cpu()
+    except:
+        None
+    try:
+        tmp_var = tmp_var.data
+    except:
+        None
+    try:
+        tmp_var = tmp_var.numpy()
+    except:
+        None
+
+    if type(tmp_var) == tuple:
+        tmp_var = tmp_var[0]
+
+    if delete_var:
+        del var
+    return tmp_var
