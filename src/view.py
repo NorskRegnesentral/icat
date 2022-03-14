@@ -90,6 +90,7 @@ def html_for_visible_images(index, data_object, zoom_value, hide_labelled):
         width=zoom_value,
         id={'role': 'img', 'index': index},
         style=css_for_image_border(image_class, is_selected),
+        title=image_path
     )
 
 def get_dropdown_options_for_labels(classes):
