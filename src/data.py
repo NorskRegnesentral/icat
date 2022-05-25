@@ -1,5 +1,7 @@
+__author__      = "Anders U. Waldeland"
+__copyright__   = "Copyright 2022, Norsk Regnesentral"
+
 from collections.abc import Iterable
-from copy import deepcopy
 from datetime import datetime
 
 import numpy as np
@@ -21,26 +23,30 @@ class ImageClusterData():
         self.inds_of_imgs_in_scatter = None
         now = datetime.now()
 
+
+
         if labels is not None:
+            paths_as_dict = dict(zip(self.path_to_images,range(0,len(self.path_to_images))))
             try:
                 for line in labels:
                     if line.startswith('#'):
                         continue
                     file,cls = line.split(';')
+
                     cls = int(cls.strip(' '))
                     try:
-                        ind = self.path_to_images.index(file)
-                    except ValueError: #File is not in list
+                        ind = paths_as_dict[file]
+                    except KeyError: #File is not in list
                         continue
                     self.class_state[ind] = cls
             except Exception as e:
                 print('Failed to parse label-file')
                 raise e
-        self.labels = labels
+        self.labels = None
 
 
 
-    def get_mscoco(self):
+    def get_labels(self):
 
         now = datetime.now()
         info =  '# Exported from iCat on {} with {} annotations'.format(
@@ -55,9 +61,6 @@ class ImageClusterData():
 
     def get_class_label(self, indexes):
         return self.class_state[np.array(indexes)]
-
-    def export_mscoco(self):
-        raise NotImplementedError()
 
     def update_if_img_was_clicked(self, index, n_clicks):
         if isinstance(index, Iterable):

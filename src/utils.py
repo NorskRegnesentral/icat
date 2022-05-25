@@ -1,3 +1,6 @@
+__author__      = "Anders U. Waldeland"
+__copyright__   = "Copyright 2022, Norsk Regnesentral"
+
 import numpy as np
 
 def downsample_to_N(array, N, random=False):

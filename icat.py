@@ -1,7 +1,8 @@
+__author__      = "Anders U. Waldeland"
+__copyright__   = "Copyright 2022, Norsk Regnesentral"
+
 import argparse
-import json
 import os
-import warnings
 
 import flask
 import numpy as np
@@ -43,7 +44,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
             image_paths = image_paths[::N]
             xy = xy[::N,:]
     elif len(image_paths)>100000:
-        warnings.warn('icat may be slow with many images ({}), consider using the max_imgs argument'.format(len(image_paths)))
+        print('WARNING: icat may be slow with many images ({}), consider using the max_imgs argument'.format(len(image_paths)))
 
     # image_paths = [f.split('/')[-1] for f in image_paths]
 
@@ -65,12 +66,11 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
     files_that_can_be_found = [os.path.isfile(f) for f in image_paths]
     if np.mean(files_that_can_be_found) == 0:
         raise FileNotFoundError('Could not find files. Eg. {}'.format(image_paths[0]))
-    assert np.mean(files_that_can_be_found)>.9, 'More than 10% of the files can not be found'
 
 
 
     if np.mean(files_that_can_be_found)!=1:
-        print('WARNING: could not find all files - ICAT will remove ignore that are missing - {} of {} files found'.format(np.sum(files_that_can_be_found), len(files_that_can_be_found)))
+        print('WARNING: could not find all files - ICAT will ignore those that are missing - {} of {} files found'.format(np.sum(files_that_can_be_found), len(files_that_can_be_found)))
         inds = np.where(files_that_can_be_found)[0]
         xy = xy[inds,:]
         image_paths = [image_paths[i] for i in inds]
@@ -83,8 +83,8 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
     selected_class = None
     all_is_selected = False
     category_to_show = -2 #==all
-    size_labelled = 2
-    size_unlabelled = 2
+    size_labelled = 6
+    size_unlabelled = 4
     app = DashProxy(__name__, prevent_initial_callbacks=True, transforms=[MultiplexerTransform()])
 
     app.scripts.config.serve_locally = True
@@ -111,7 +111,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
             ),
             html.Div(
                 [
-                    html.Button('Download mscoco', id='download_button'),
+                    html.Button('Download labels', id='download_button'),
                     dcc.Download(id="download-text"),
                     html.Button('Select/Un-select all', id='select_all_button'),
                     html.Div(
@@ -135,7 +135,10 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
         ),
 
         html.Div([
-            html.H1(children='iCAT - image Cluster Analysis Tool'),
+            html.Div([
+                html.Img(src='/static/logo.png', width=200, style={'display':'inline-block', 'float': 'bottom'}),
+                html.H1(children='iCAT - image Cluster Analysis Tool', style={'display':'inline-block', 'margin-left':20,'float': 'center'}),
+                ],style={'white-space':'nowrap'}),
 
             html.Div(
                 [
@@ -384,7 +387,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
         prevent_initial_call=True,
     )
     def func(n_clicks):
-        return dict(content='\n'.join(data.get_mscoco()), filename="labels.txt")
+        return dict(content='\n'.join(data.get_labels()), filename="labels.txt")
 
     # Function that serves files to webpage
     # Be *very* careful here - you don't want to serve arbitrary files
@@ -396,6 +399,8 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
         if file == 'select_lasso.js':
             print('serving select_lasso.js')
             return flask.send_from_directory(os.path.join(os.path.dirname(__file__),'res'), 'select_lasso.js')
+        if file == 'logo.png':
+            return flask.send_from_directory(os.path.join(os.path.dirname(__file__), 'res'), 'logo.png')
         elif file.split('/')[-1] in allowed_files_to_upload:
             ind = allowed_files_to_upload.index(file.split('/')[-1])
             path = data.path_to_images[ind]
@@ -404,7 +409,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
             raise Exception('"{}" is excluded from the allowed static files'.format(file))
 
 
-    app.run_server(debug=True, port=port, host=host)
+    app.run_server(debug=False, port=port, host=host)
 
 ##
 
@@ -463,9 +468,9 @@ if __name__ == "__main__":
         required=False)
 
     optionalNamed.add_argument(
-        '-m' ,
-        '--mscoco',
-        help='mscoco-file for existing labels',
+        '-l' ,
+        '--label_file',
+        help='label-file with existing labels (format: each line is the path to one image and the class number separated by semi-colon: "PATH_TO_FILE; CLASS_NUMBER")',
         default=None,
         required=False)
 
@@ -487,5 +492,5 @@ if __name__ == "__main__":
              max_selected = args.max_selected,
              port=args.port,
              host=args.host,
-             label_file=args.mscoco,
+             label_file=args.label_file,
              max_imgs=args.max_imgs)

@@ -1,0 +1,4 @@
+numpy==1.22.1
+Flask==2.0.2
+dash-extensions==0.0.67
+dash==2.0.0

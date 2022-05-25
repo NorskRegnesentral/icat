@@ -1,3 +1,5 @@
+__author__      = "Anders U. Waldeland"
+__copyright__   = "Copyright 2022, Norsk Regnesentral"
 from collections.abc import Iterable
 
 import numpy as np
