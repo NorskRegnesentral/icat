@@ -24,8 +24,8 @@ from step_0_specify_dataset import SSLDataset, transform_at_prediction
 
 #################### INSTRUCTION #######################
 
-path_to_pretrained_model = '/nr/samba/jo/pro/iari/usr/anders/code/PyTorch_BYOL/runs/Jan18_09-32-57_jo1.ad.nr.no/checkpoints/model.pth'
-pretraing_type = 'BYOL' #What pretraining did you use? ('BYOL', 'SimCLR', 'ImageNet' (no path needed))
+# path_to_pretrained_model = '/nr/samba/jo/pro/iari/usr/anders/code/PyTorch_BYOL/runs/Jan18_09-32-57_jo1.ad.nr.no/checkpoints/model.pth'
+pretraing_type = 'DINOv2'  # What pretraining did you use? ('BYOL', 'SimCLR', 'ImageNet' (no path needed), 'DINOv2' (no path needed))
 
 # PARAMETERS (that does not need to be changed)
 GPU_NO = 1
@@ -55,6 +55,8 @@ elif pretraing_type=='ImageNet':
     model = torch.nn.Sequential(*list(model_conv.children())[:-1]) #Remove ResNet head
     transform_at_prediction.transforms.append(        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 )
+elif pretraing_type == 'DINOv2':
+    model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitb14')
 else:
     raise NotImplementedError(pretraing_type)
 
@@ -62,7 +64,7 @@ else:
 dataset = SSLDataset(transform_at_prediction)
 now = datetime.now().strftime("%m.%d.%Y, %H:%M:%S")
 OUT_FILE = os.path.join(PATH, 'tsne_{}_{}_{}.npz'.format(pretraing_type, date_string(), dataset.name))
-train_loader = torch.utils.data.DataLoader( dataset, batch_size=16, shuffle=False, num_workers=8, pin_memory=True, drop_last=False)
+train_loader = torch.utils.data.DataLoader( dataset, batch_size=8, shuffle=False, num_workers=8, pin_memory=True, drop_last=False)
 
 preds = []
 model.eval()
