@@ -1,8 +1,7 @@
 # ICAT: Image Cluster Annotation Tool
 A tool for exploring and labelling images that have been clustered.
-<img src="src/icat.png">
+<img src="res/icat.png">
 
-  
 
 ### Instruction
 - make a npz-file with clusters with the following fields

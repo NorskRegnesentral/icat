@@ -1,5 +1,5 @@
 __author__      = "Anders U. Waldeland"
-__copyright__   = "Copyright 2022, Norsk Regnesentral"
+__copyright__   = "Copyright 2025, Norsk Regnesentral"
 
 import argparse
 import os
