@@ -409,7 +409,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
             raise Exception('"{}" is excluded from the allowed static files'.format(file))
 
 
-    app.run_server(debug=False, port=port, host=host)
+    app.run(debug=True, port=port, host=host)
 
 ##
 

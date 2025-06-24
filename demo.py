@@ -8,7 +8,7 @@ def main():
     img_dir = os.path.join(out_dir, 'images')
     os.makedirs(img_dir, exist_ok=True)
 
-    n_imgs = 1000
+    n_imgs = 100
     img_size = (128, 128)
     sigma = 10
     files = []
@@ -23,6 +23,7 @@ def main():
         files.append(img_path)
         xy[i, 0] = mus[0]  # R channel mean
         xy[i, 1] = mus[2]  # B channel mean
+        print(img_path)
 
     np.savez(os.path.join(out_dir, 'data.npz'), files=np.array(files), xy=xy)
 

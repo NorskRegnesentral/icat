@@ -12,11 +12,13 @@ requires-python = ">=3.8"
 dependencies = [
     "dash==2.4.1",
     "dash-extensions==0.0.71",
-    "Flask==2.0.3",
+    "Flask==3.1.1",
     "numpy==1.19.5",
     "ipywidgets==7.7.0",
+    "Pillow==9.0.1",
+    "anywidget==0.9.18 "
 ]
-
+#Successfully installed Flask-3.0.3 Werkzeug-3.0.6 dash-3.0.4 ipywidgets-8.1.7 retrying-1.4.0 widgetsnbextension-4.0.14
 [project.scripts]
 icat = "icat.__main__:main"
 

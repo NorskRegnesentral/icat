@@ -9,7 +9,7 @@ A tool for exploring and labelling images that have been clustered.
   - "xy": a Nx2 array of floats with positions of the images in cluster space
   - Install using pip
 ```
-pip install .
+pip install . -e
 ```
 - Run icat:
 ```
