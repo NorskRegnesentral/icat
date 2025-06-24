@@ -22,3 +22,6 @@ icat = "icat.__main__:main"
 
 [tool.setuptools.package-data]
 icat = ["res/*"]
+
+[tool.setuptools]
+packages = ["icat"]
