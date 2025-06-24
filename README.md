@@ -7,18 +7,18 @@ A tool for exploring and labelling images that have been clustered.
 - make a npz-file with clusters with the following fields
   - 'files': list with path to images (stored as jpegs, pngs, etc. )
   - "xy": a Nx2 array of floats with positions of the images in cluster space
-  - Install requirements
+  - Install using pip
 ```
-pip install -r requirements.txt
+pip install .
 ```
 - Run icat:
 ```
-python icat.py -f YOUR_FILE_WITH_DATA.npz
+icat -f YOUR_FILE_WITH_DATA.npz
 ```
 
 - For more help run:
 ```
-python icat.py -h
+icat -h
 ```
 
 #### TODOS:

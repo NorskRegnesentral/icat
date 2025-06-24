@@ -11,9 +11,9 @@ from dash import dcc
 from dash import html
 from dash_extensions.enrich import Output, DashProxy, Input, State, ALL, MultiplexerTransform, MATCH
 
-from src.data import ImageClusterData
-from src.utils import downsample_to_N
-from src.view import get_dropdown_options_for_labels, html_for_visible_images, css_for_image_border, \
+from icat.data import ImageClusterData
+from icat.utils import downsample_to_N
+from icat.view import get_dropdown_options_for_labels, html_for_visible_images, css_for_image_border, \
     STATIC_IMAGE_ROUTE, COLORS, get_scatter_plot_fig
 
 
@@ -414,8 +414,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
 ##
 
 
-if __name__ == "__main__":
-
+def main(argv=None):
     parser = argparse.ArgumentParser(description='ICAT - Image Cluster Annotation Tool')
     optionalNamed = parser.add_argument_group('Required arguments')
     optionalNamed.add_argument(
@@ -482,15 +481,21 @@ if __name__ == "__main__":
         required=False)
 
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
 
-    run_icat(args.file,
-             classes=[] if args.classes == [] else args.classes.split(','),
-             replace_path=args.replace_path,
-             replace_part=args.replace_part,
-             max_selected = args.max_selected,
-             port=args.port,
-             host=args.host,
-             label_file=args.label_file,
-             max_imgs=args.max_imgs)
+    run_icat(
+        args.file,
+        classes=[] if args.classes == [] else args.classes.split(','),
+        replace_path=args.replace_path,
+        replace_part=args.replace_part,
+        max_selected=args.max_selected,
+        port=args.port,
+        host=args.host,
+        label_file=args.label_file,
+        max_imgs=args.max_imgs,
+    )
+
+
+if __name__ == "__main__":
+    main()
