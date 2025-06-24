@@ -277,7 +277,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
     # On show_all dropdown-menu change
     @app.callback(
                 Output('image_field', 'children'),
-                Output('scatter_plot', 'figure'),
+                Output('scatter_plot', 'figure', allow_duplicate=True),
                   Input('show_list', 'value'))
     def show_category(value):
         global category_to_show
