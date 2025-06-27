@@ -14,10 +14,10 @@ from dash_extensions.enrich import Output, DashProxy, Input, State, ALL, Multipl
 from icat.data import ImageClusterData
 from icat.utils import downsample_to_N
 from icat.view import get_dropdown_options_for_labels, html_for_visible_images, css_for_image_border, \
-    STATIC_IMAGE_ROUTE, COLORS, get_scatter_plot_fig
+    STATIC_IMAGE_ROUTE, DEFAULT_COLORS, get_scatter_plot_fig
 
 
-def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selected = 200, port=8030, host='localhost', label_file=None, max_imgs = None):
+def run_icat(file, classes = [], colors=None, replace_path=None, replace_part=None, max_selected = 200, port=8030, host='localhost', label_file=None, max_imgs = None):
     ################################################################################
     # Initialize data-object
 
@@ -94,7 +94,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
 
     ##############################################################################
     # LAYOUT OF WEBPAGE
-    scatter_plot_figure = get_scatter_plot_fig(data, category_to_show, size_labelled, size_unlabelled, None)
+    scatter_plot_figure = get_scatter_plot_fig(data, category_to_show, size_labelled, size_unlabelled, colors, None)
 
     app.layout = html.Div(children=[
 
@@ -131,7 +131,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
                     ),
                 ], hidden= len(data.classes)==0,#Hide this part if no labels are provided
             ),
-            html.Div( [ html.Plaintext(c, style={'color':COLORS[i% len(COLORS)], 'width': str(int(50//len(data.classes)))+'%', 'margin':'2px'}) for i,c in enumerate(data.classes)])
+            html.Div( [ html.Plaintext(c, style={'color':colors[i% len(colors)], 'width': str(int(50//len(data.classes)))+'%', 'margin':'2px'}) for i,c in enumerate(data.classes)])
         ],
             style={'width': "49%", 'float': 'right'}
         ),
@@ -237,7 +237,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
 
         print('Selected {} points in scatter.'.format(len(indexes_of_marked)))
 
-        return html_for_visible_images(indexes_of_marked, data, image_zoom_value, category_to_show)
+        return html_for_visible_images(indexes_of_marked, data, image_zoom_value, category_to_show, colors)
 
 
     # On size_labelled-slider value change
@@ -271,7 +271,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
     )
     def update_scatterplot(n_clicks):
         data.unselect_all()
-        return get_scatter_plot_fig(data, category_to_show, size_labelled, size_unlabelled, None) , html_for_visible_images([], data, image_zoom_value, category_to_show)
+        return get_scatter_plot_fig(data, category_to_show, size_labelled, size_unlabelled, None) , html_for_visible_images([], data, image_zoom_value, category_to_show, colors)
 
 
 
@@ -285,7 +285,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
         global category_to_show
         category_to_show = value
         data.unselect_all()
-        return html_for_visible_images([], data, image_zoom_value, category_to_show), get_scatter_plot_fig(data, category_to_show, size_labelled, size_unlabelled, None)
+        return html_for_visible_images([], data, image_zoom_value, category_to_show, colors), get_scatter_plot_fig(data, category_to_show, size_labelled, size_unlabelled, None)
 
 
     # On image click
@@ -305,7 +305,8 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
 
         image_css = css_for_image_border(
             data.get_class_label(index),
-            data.is_img_selected(index)
+            data.is_img_selected(index),
+            colors
         )
         print('SEND')
         return image_css
@@ -324,7 +325,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
         image_zoom_value = value
 
         indexes = [i['index'] for i in image_elements]
-        return 'Zoom: ' + str(value) +'%',  html_for_visible_images(indexes, data, image_zoom_value, category_to_show)
+        return 'Zoom: ' + str(value) +'%',  html_for_visible_images(indexes, data, image_zoom_value, category_to_show, colors)
 
 
 
@@ -356,7 +357,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
         all_is_selected = False
 
         indexes = [p['index'] for p in image_elements]
-        return html_for_visible_images(indexes, data, image_zoom_value, category_to_show)
+        return html_for_visible_images(indexes, data, image_zoom_value, category_to_show, colors)
 
 
     # On select/unselect
@@ -377,7 +378,7 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
             indexes = [ie['index'] for ie in image_elements]
             data.select_img(indexes)
 
-        return html_for_visible_images(indexes, data, image_zoom_value, category_to_show)
+        return html_for_visible_images(indexes, data, image_zoom_value, category_to_show, colors)
 
 
 
@@ -434,6 +435,13 @@ def main(argv=None):
         required=False)
 
     optionalNamed.add_argument(
+        '-co',
+        '--colors',
+        help='A comma separated list of HTML color names or hex values, in the same order as the classes',
+        default = DEFAULT_COLORS,
+        required=False)
+
+    optionalNamed.add_argument(
         '-r',
         '--replace_path',
         help='Replaces the path to the folder of the images.',
@@ -485,10 +493,10 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
 
-
     run_icat(
         args.file,
         classes=[] if args.classes == [] else args.classes.split(','),
+        colors=args.colors.split(','),
         replace_path=args.replace_path,
         replace_part=args.replace_part,
         max_selected=args.max_selected,
