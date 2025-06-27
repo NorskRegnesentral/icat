@@ -13,7 +13,7 @@ STATE_UNLABELLED = -1
 STATIC_IMAGE_ROUTE = '/static/'
 
 
-COLORS = [
+DEFAULT_COLORS = [
     "Red",
     "Lime",
     "Fuchsia",
@@ -39,9 +39,9 @@ COLORS = [
 ]
 COLOR_UNLABELLED='Blue'
 
-def css_for_image_border(image_class, is_selected):
+def css_for_image_border(image_class, is_selected, colors):
     if isinstance(image_class, Iterable):
-        return [css_for_image_border(i,i_s) for i, i_s in zip(image_class, is_selected)]
+        return [css_for_image_border(i, i_s, colors) for i, i_s in zip(image_class, is_selected)]
 
     if is_selected:
         if image_class == STATE_UNLABELLED:
@@ -53,7 +53,7 @@ def css_for_image_border(image_class, is_selected):
             return {
                 "border": "2px blue dashed",
                 "margin": "1px",
-                "outline": "3px {} solid".format(COLORS[image_class%len(COLORS)]),
+                "outline": "3px {} solid".format(colors[image_class%len(colors)]),
                 "outlineOffset": "-5px",
             }
 
@@ -66,18 +66,18 @@ def css_for_image_border(image_class, is_selected):
     else:
         return {
             "margin": "3px",
-            "outline": "3px {} solid".format(COLORS[image_class%len(COLORS)]),
+            "outline": "3px {} solid".format(colors[image_class%len(colors)]),
             "outlineOffset": "-3px",
     }
 
 
-def html_for_visible_images(index, data_object, zoom_value, hide_labelled):
+def html_for_visible_images(index, data_object, zoom_value, hide_labelled, colors):
 
     data_object.n_times_img_clicked *= 0
 
 
     if isinstance(index, Iterable):
-        return [html_for_visible_images(i, data_object, zoom_value, hide_labelled) for i in index]
+        return [html_for_visible_images(i, data_object, zoom_value, hide_labelled, colors) for i in index]
 
     image_path = data_object.path_to_images[index]
     image_class = data_object.get_class_label(index)
@@ -91,7 +91,7 @@ def html_for_visible_images(index, data_object, zoom_value, hide_labelled):
         src=STATIC_IMAGE_ROUTE + image_path.split('/')[-1],
         width=zoom_value,
         id={'role': 'img', 'index': index},
-        style=css_for_image_border(image_class, is_selected),
+        style=css_for_image_border(image_class, is_selected, colors),
         title=image_path
     )
 
@@ -100,7 +100,7 @@ def get_dropdown_options_for_labels(classes):
 
 
 
-def get_scatter_plot_fig(data_object, category_to_show, size_labelled, size_unlabelled, zoom):
+def get_scatter_plot_fig(data_object, category_to_show, size_labelled, size_unlabelled, colors, zoom):
     data_object.unselect_all()
     if category_to_show == -2:
         mask = np.ones_like(data_object.class_state, dtype='bool')
@@ -108,7 +108,7 @@ def get_scatter_plot_fig(data_object, category_to_show, size_labelled, size_unla
         mask = data_object.class_state == category_to_show
 
     marker_color = [
-        COLOR_UNLABELLED.lower() if data_object.class_state[i] == STATE_UNLABELLED else COLORS[data_object.class_state[i]% len(COLORS)].lower()
+        COLOR_UNLABELLED.lower() if data_object.class_state[i] == STATE_UNLABELLED else colors[data_object.class_state[i]% len(colors)].lower()
         for i in np.where(mask)[0]
     ]
 
