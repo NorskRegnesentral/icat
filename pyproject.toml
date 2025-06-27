@@ -17,6 +17,7 @@ dependencies = [
     "ipywidgets>=8.1.5",
     "Pillow>=10.0.0",
     "anywidget>=0.9.18",
+    "tzdata>=2025.2"
 ]
 #Successfully installed Flask-3.0.3 Werkzeug-3.0.6 dash-3.0.4 ipywidgets-8.1.7 retrying-1.4.0 widgetsnbextension-4.0.14
 [project.scripts]
