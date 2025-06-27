@@ -39,6 +39,8 @@ def run_icat(file, classes = [], replace_path=None, replace_part=None, max_selec
     del cluster_file
 
     if max_imgs is not None:
+        if isinstance(max_imgs, str):
+            max_imgs = int(max_imgs)
         if len(image_paths)>max_imgs:
             N = len(image_paths)//max_imgs
             image_paths = image_paths[::N]
